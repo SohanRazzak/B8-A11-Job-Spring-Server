@@ -3,7 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import { MongoClient, ObjectId, ServerApiVersion } from 'mongodb';
 import jwt from 'jsonwebtoken';
 
 
@@ -112,6 +112,35 @@ app.get("/my-jobs/:uid", verifyToken, async (req, res) => {
     }
 })
 
+// Get Jobs With Query
+app.get("/get-all-jobs", async (req, res) => {
+    try {
+        const category = req.query.category || null;
+        const filter = category ? { jobType: category} : {};
+        const projection = { jobDescription: 0, companyThumb: 0};
+        const cursor = jobCollection.find(filter).project(projection);
+        const result = await cursor.toArray();
+        res.send(result);
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+// Get Single Job Details Using _ID
+app.get("/job-details/:id", verifyToken, async(req, res)=>{
+    try{
+        const id = req.params.id;
+        const filter = { _id : new ObjectId(id)};
+        const result = await jobCollection.findOne(filter);
+        res.send(result)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
 
 // Post Methods
 
