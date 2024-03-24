@@ -112,7 +112,7 @@ app.get("/my-jobs/:uid", verifyToken, async (req, res) => {
     }
 })
 
-// Get Jobs With Query
+// Get Jobs With Query [working]
 app.get("/get-all-jobs", async (req, res) => {
     try {
         const category = req.query.category || null;
@@ -128,7 +128,7 @@ app.get("/get-all-jobs", async (req, res) => {
     }
 })
 
-// Get Single Job Details Using _ID
+// Get Single Job Details Using _ID [working]
 app.get("/job-details/:id", verifyToken, async(req, res)=>{
     try{
         const id = req.params.id;
@@ -197,6 +197,29 @@ app.post("/add-job", verifyToken, async (req, res) => {
 })
 
 // Put
+
+// Updating Job
+app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
+    try {
+        const id = req.params.id;
+        const updatedJob = req.body;
+        if (updatedJob.publisher !== req.jwtUserVerified.email) {
+            return res.status(403).send("Forbidden: User not found");
+        }
+        const filter = { _id : new ObjectId(id)};
+        const setUpdatedJob = {
+            $set: {
+                ...updatedJob
+            }
+        }
+        
+        const result = await jobCollection.updateOne(filter, setUpdatedJob);
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
 
 // Login User By Social [working]
 app.put("/users", async (req, res) => {
