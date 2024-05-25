@@ -72,6 +72,7 @@ run().catch(console.dir);
 const database = client.db("Job_Spring");
 const userCollection = database.collection("userCollection");
 const jobCollection = database.collection("jobCollection");
+const appliedJobs = database.collection("appliedJobs");
 
 
 // API Endpoints
@@ -142,6 +143,20 @@ app.get("/job-details/:id", verifyToken, async(req, res)=>{
     }
 })
 
+// Get applicants
+app.get('/get-applications/:id', verifyToken, async (req, res)=>{
+    try{
+        const id = req.params.id;
+        const filter = { jobId : id};
+        const result = await appliedJobs.find(filter).toArray();
+        res.send(result)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
 // Post Methods
 
 // Create User [working]
@@ -196,14 +211,27 @@ app.post("/add-job", verifyToken, async (req, res) => {
     }
 })
 
+// Apply new job [add to appliedJobs Collection]
+app.post("/apply-job", verifyToken, async (req, res)=>{
+    try{
+        const appliedJob = req.body;
+        console.log(appliedJob);
+        const result = await appliedJobs.insertOne(appliedJob);
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
 // Put
 
-// Updating Job
+// Updating Job [working]
 app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
     try {
         const id = req.params.id;
         const updatedJob = req.body;
-        if (updatedJob.publisher !== req.jwtUserVerified.email) {
+        if (updatedJob.email !== req.jwtUserVerified.email) {
             return res.status(403).send("Forbidden: User not found");
         }
         const filter = { _id : new ObjectId(id)};
