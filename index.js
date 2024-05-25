@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 
 // middleware
 const corsConfiguration = {
-    origin: ["http://localhost:5173", "https://b8-a11-job-spring-server.onrender.com"],
+    origin: "http://localhost:5173",
     credentials: true
 }
 dotenv.config();
@@ -181,7 +181,9 @@ app.post("/jwt", async (req, res) => {
         })
         res.cookie("token", token, {
             httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 2
+            maxAge: 1000 * 60 * 60 * 2,
+            sameSite: "None",
+            secure: true
         }).send({ success: true })
     }
     catch (error) {
