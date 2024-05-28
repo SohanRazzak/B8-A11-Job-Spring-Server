@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 
 // middleware
 const corsConfiguration = {
-    origin: "https://job-spring.web.app",
+    origin: "http://localhost:5173", //"https://job-spring.web.app",
     credentials: true
 }
 dotenv.config();
@@ -119,7 +119,27 @@ app.get("/get-all-jobs", async (req, res) => {
         const category = req.query.category || null;
         const filter = category ? { jobType: category} : {};
         const projection = { jobDescription: 0, companyThumb: 0};
-        const cursor = jobCollection.find(filter).project(projection);
+        const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).project(projection);
+        const result = await cursor.toArray();
+        res.send(result);
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+// Get Jobs With title as Query [working]
+app.get("/search", async (req, res) => {
+    try {
+        const jobTitle = req.query.title || null;
+        console.log(typeof jobTitle);
+        const filter = jobTitle ? { jobTitle : {
+            $regex : jobTitle,
+            $options: 'i'
+        }} : {};
+        const projection = { jobDescription: 0, companyThumb: 0};
+        const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).project(projection);
         const result = await cursor.toArray();
         res.send(result);
     }
@@ -143,12 +163,19 @@ app.get("/job-details/:id", verifyToken, async(req, res)=>{
     }
 })
 
-// Get applicants
-app.get('/get-applications/:id', verifyToken, async (req, res)=>{
+// Get applicants [working]
+app.get('/get-applications/:uid', verifyToken, async (req, res)=>{
     try{
-        const id = req.params.id;
-        const filter = { jobId : id};
-        const result = await appliedJobs.find(filter).toArray();
+        const uid = req.params.uid;
+        const query = { uid : uid};
+        const getMyJob = await appliedJobs.find(query).toArray();
+        const jobIds = getMyJob.map(entry => entry.jobId);
+        const cursor = jobIds.map(e => new ObjectId(e));
+        const filter = { _id : {
+            $in : cursor
+        }}
+        const result = await jobCollection.find(filter).toArray();
+        console.log(result);
         res.send(result)
     }
     catch (error) {
@@ -182,8 +209,8 @@ app.post("/jwt", async (req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 2,
-            sameSite: "None",
-            secure: true
+            // sameSite: "None",
+            // secure: true
         }).send({ success: true })
     }
     catch (error) {
@@ -233,9 +260,33 @@ app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
     try {
         const id = req.params.id;
         const updatedJob = req.body;
-        if (updatedJob.email !== req.jwtUserVerified.email) {
+        console.log(updatedJob);
+        console.log(updatedJob);
+        if (updatedJob.publisher !== req.jwtUserVerified.email) {
             return res.status(403).send("Forbidden: User not found");
         }
+        const filter = { _id : new ObjectId(id)};
+        const setUpdatedJob = {
+            $set: {
+                ...updatedJob
+            }
+        }
+        
+        const result = await jobCollection.updateOne(filter, setUpdatedJob);
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+
+// Updating Job [working]
+app.patch('/update-job-applicants/:id', async(req,res)=>{
+    try {
+        const id = req.params.id;
+        const updatedJob = req.body;
+        console.log(updatedJob);
         const filter = { _id : new ObjectId(id)};
         const setUpdatedJob = {
             $set: {
