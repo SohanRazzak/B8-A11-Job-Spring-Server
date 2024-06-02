@@ -73,6 +73,7 @@ const database = client.db("Job_Spring");
 const userCollection = database.collection("userCollection");
 const jobCollection = database.collection("jobCollection");
 const appliedJobs = database.collection("appliedJobs");
+const blogPosts = database.collection("blogPosts");
 
 
 // API Endpoints
@@ -134,10 +135,10 @@ app.get("/search", async (req, res) => {
     try {
         const jobTitle = req.query.title || null;
         console.log(typeof jobTitle);
-        const filter = jobTitle ? { jobTitle : {
+        const filter = { jobTitle : {
             $regex : jobTitle,
             $options: 'i'
-        }} : {};
+        }};
         const projection = { jobDescription: 0, companyThumb: 0};
         const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).project(projection);
         const result = await cursor.toArray();
@@ -163,19 +164,57 @@ app.get("/job-details/:id", verifyToken, async(req, res)=>{
     }
 })
 
-// Get applicants [working]
-app.get('/get-applications/:uid', verifyToken, async (req, res)=>{
+// Get Applied Jobs [working]
+app.get('/get-applied-jobs/:uid', verifyToken, async (req, res)=>{
     try{
         const uid = req.params.uid;
         const query = { uid : uid};
-        const getMyJob = await appliedJobs.find(query).toArray();
-        const jobIds = getMyJob.map(entry => entry.jobId);
+        const getMyAppliedJob = await appliedJobs.find(query).toArray();
+        const jobIds = getMyAppliedJob.map(entry => entry.jobId);
         const cursor = jobIds.map(e => new ObjectId(e));
         const filter = { _id : {
             $in : cursor
         }}
         const result = await jobCollection.find(filter).toArray();
-        console.log(result);
+        res.send(result)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+// Get applicants [working]
+app.get('/get-applications/:uid', verifyToken, async (req, res)=>{
+    try{
+        const uid = req.params.uid;
+        const query = { uid : uid};
+        const getMyAppliedJob = await appliedJobs.find(query).toArray();
+        res.send(getMyAppliedJob)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+// Get Blog Posts [working]
+app.get('/get-blog-posts', async (req, res)=>{
+    try{
+        const result = await blogPosts.find().toArray();
+        res.send(result)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+// Get Single Blog Post [working]
+app.get('/get-blog-post/:id', async (req, res)=>{
+    try{
+        const id = req.params.id;
+        const filter = { _id : new ObjectId(id)}
+        const result = await blogPosts.findOne(filter);
         res.send(result)
     }
     catch (error) {
