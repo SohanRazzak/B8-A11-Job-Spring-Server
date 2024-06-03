@@ -104,7 +104,7 @@ app.get("/my-jobs/:uid", verifyToken, async (req, res) => {
         if (uid !== req.jwtUserVerified.uid) {
             return res.status(403).send("Forbidden: User not found");
         }
-        const filter = { publisher : req.jwtUserVerified.email };
+        const filter = { publisher: req.jwtUserVerified.email };
         const result = await jobCollection.find(filter).toArray();
         res.send(result);
     }
@@ -118,11 +118,27 @@ app.get("/my-jobs/:uid", verifyToken, async (req, res) => {
 app.get("/get-all-jobs", async (req, res) => {
     try {
         const category = req.query.category || null;
-        const filter = category ? { jobType: category} : {};
-        const projection = { jobDescription: 0, companyThumb: 0};
-        const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).project(projection);
+        const page = req.query.page || 0;
+        const size = 10;
+        const filter = category ? { jobType: category } : {};
+        const projection = { jobDescription: 0, companyThumb: 0 };
+        const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).skip(page * size).limit(size).project(projection);
         const result = await cursor.toArray();
         res.send(result);
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+// Get Job Count
+app.get("/get-jobs-count", async (req, res) => {
+    try {
+        const category = req.query.category || null;
+        const filter = category ? { jobType: category } : {};
+        const result = (await jobCollection.find(filter).toArray()).length;
+        res.send({jobCount: result})
     }
     catch (error) {
         console.log(error);
@@ -135,11 +151,13 @@ app.get("/search", async (req, res) => {
     try {
         const jobTitle = req.query.title || null;
         console.log(typeof jobTitle);
-        const filter = { jobTitle : {
-            $regex : jobTitle,
-            $options: 'i'
-        }};
-        const projection = { jobDescription: 0, companyThumb: 0};
+        const filter = {
+            jobTitle: {
+                $regex: jobTitle,
+                $options: 'i'
+            }
+        };
+        const projection = { jobDescription: 0, companyThumb: 0 };
         const cursor = jobCollection.find(filter).sort({ publishedAt: -1 }).project(projection);
         const result = await cursor.toArray();
         res.send(result);
@@ -151,10 +169,10 @@ app.get("/search", async (req, res) => {
 })
 
 // Get Single Job Details Using _ID [working]
-app.get("/job-details/:id", verifyToken, async(req, res)=>{
-    try{
+app.get("/job-details/:id", verifyToken, async (req, res) => {
+    try {
         const id = req.params.id;
-        const filter = { _id : new ObjectId(id)};
+        const filter = { _id: new ObjectId(id) };
         const result = await jobCollection.findOne(filter);
         res.send(result)
     }
@@ -165,16 +183,18 @@ app.get("/job-details/:id", verifyToken, async(req, res)=>{
 })
 
 // Get Applied Jobs [working]
-app.get('/get-applied-jobs/:uid', verifyToken, async (req, res)=>{
-    try{
+app.get('/get-applied-jobs/:uid', verifyToken, async (req, res) => {
+    try {
         const uid = req.params.uid;
-        const query = { uid : uid};
+        const query = { uid: uid };
         const getMyAppliedJob = await appliedJobs.find(query).toArray();
         const jobIds = getMyAppliedJob.map(entry => entry.jobId);
         const cursor = jobIds.map(e => new ObjectId(e));
-        const filter = { _id : {
-            $in : cursor
-        }}
+        const filter = {
+            _id: {
+                $in: cursor
+            }
+        }
         const result = await jobCollection.find(filter).toArray();
         res.send(result)
     }
@@ -184,10 +204,10 @@ app.get('/get-applied-jobs/:uid', verifyToken, async (req, res)=>{
     }
 })
 // Get applicants [working]
-app.get('/get-applications/:uid', verifyToken, async (req, res)=>{
-    try{
+app.get('/get-applications/:uid', verifyToken, async (req, res) => {
+    try {
         const uid = req.params.uid;
-        const query = { uid : uid};
+        const query = { uid: uid };
         const getMyAppliedJob = await appliedJobs.find(query).toArray();
         res.send(getMyAppliedJob)
     }
@@ -198,8 +218,8 @@ app.get('/get-applications/:uid', verifyToken, async (req, res)=>{
 })
 
 // Get Blog Posts [working]
-app.get('/get-blog-posts', async (req, res)=>{
-    try{
+app.get('/get-blog-posts', async (req, res) => {
+    try {
         const result = await blogPosts.find().toArray();
         res.send(result)
     }
@@ -210,10 +230,10 @@ app.get('/get-blog-posts', async (req, res)=>{
 })
 
 // Get Single Blog Post [working]
-app.get('/get-blog-post/:id', async (req, res)=>{
-    try{
+app.get('/get-blog-post/:id', async (req, res) => {
+    try {
         const id = req.params.id;
-        const filter = { _id : new ObjectId(id)}
+        const filter = { _id: new ObjectId(id) }
         const result = await blogPosts.findOne(filter);
         res.send(result)
     }
@@ -280,8 +300,8 @@ app.post("/add-job", verifyToken, async (req, res) => {
 })
 
 // Apply new job [add to appliedJobs Collection]
-app.post("/apply-job", verifyToken, async (req, res)=>{
-    try{
+app.post("/apply-job", verifyToken, async (req, res) => {
+    try {
         const appliedJob = req.body;
         console.log(appliedJob);
         const result = await appliedJobs.insertOne(appliedJob);
@@ -295,7 +315,7 @@ app.post("/apply-job", verifyToken, async (req, res)=>{
 // Put
 
 // Updating Job [working]
-app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
+app.patch('/update-my-job/:id', verifyToken, async (req, res) => {
     try {
         const id = req.params.id;
         const updatedJob = req.body;
@@ -304,13 +324,13 @@ app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
         if (updatedJob.publisher !== req.jwtUserVerified.email) {
             return res.status(403).send("Forbidden: User not found");
         }
-        const filter = { _id : new ObjectId(id)};
+        const filter = { _id: new ObjectId(id) };
         const setUpdatedJob = {
             $set: {
                 ...updatedJob
             }
         }
-        
+
         const result = await jobCollection.updateOne(filter, setUpdatedJob);
         res.send(result)
     } catch (error) {
@@ -321,18 +341,18 @@ app.patch('/update-my-job/:id', verifyToken, async(req,res)=>{
 
 
 // Updating Job [working]
-app.patch('/update-job-applicants/:id', async(req,res)=>{
+app.patch('/update-job-applicants/:id', async (req, res) => {
     try {
         const id = req.params.id;
         const updatedJob = req.body;
         console.log(updatedJob);
-        const filter = { _id : new ObjectId(id)};
+        const filter = { _id: new ObjectId(id) };
         const setUpdatedJob = {
             $set: {
                 ...updatedJob
             }
         }
-        
+
         const result = await jobCollection.updateOne(filter, setUpdatedJob);
         res.send(result)
     } catch (error) {
