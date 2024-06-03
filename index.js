@@ -268,8 +268,8 @@ app.post("/jwt", async (req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 2,
-            // sameSite: "None",
-            // secure: true
+            sameSite: "None",
+            secure: true
         }).send({ success: true })
     }
     catch (error) {
