@@ -13,6 +13,7 @@ const port = process.env.PORT || 5000;
 // middleware
 const corsConfiguration = {
     origin: "https://job-spring.web.app",
+    // origin: "http://localhost:5173",
     credentials: true
 }
 dotenv.config();
@@ -74,6 +75,7 @@ const userCollection = database.collection("userCollection");
 const jobCollection = database.collection("jobCollection");
 const appliedJobs = database.collection("appliedJobs");
 const blogPosts = database.collection("blogPosts");
+const testimonials = database.collection("testimonials");
 
 
 // API Endpoints
@@ -235,6 +237,19 @@ app.get('/get-blog-post/:id', async (req, res) => {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) }
         const result = await blogPosts.findOne(filter);
+        res.send(result)
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send("Internal Server Error");
+    }
+})
+
+
+// Get Testimonials
+app.get('/get-testimonials', async (req, res) => {
+    try {
+        const result = await testimonials.find().toArray();
         res.send(result)
     }
     catch (error) {
