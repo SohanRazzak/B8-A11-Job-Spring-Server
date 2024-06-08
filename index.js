@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 
 // middleware
 const corsConfiguration = {
-    origin: "https://job-spring.firebaseapp.com",
+    origin: "https://job-spring-2.web.app",
     // origin: "http://localhost:5173",
     credentials: true
 }
