@@ -12,8 +12,7 @@ const port = process.env.PORT || 5000;
 
 // middleware
 const corsConfiguration = {
-    origin: "https://job-spring-2.web.app",
-    // origin: "http://localhost:5173",
+    origin: ["https://job-spring-2.web.app","http://localhost:5173", "https://b8-a11-job-spring-client.vercel.app"],
     credentials: true
 }
 dotenv.config();
